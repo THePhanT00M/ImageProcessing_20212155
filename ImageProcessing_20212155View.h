@@ -67,6 +67,15 @@ public:
 	afx_msg void OnMopologyBinarization();
 	afx_msg void OnMopologyErosion();
 	afx_msg void OnMopologyDilation();
+	afx_msg void OnMopologyOpenning();
+	afx_msg void OnMoplogyClosing();
+	void CopyResultToInput();
+	afx_msg void OnGeometryZoominPixelCopy();
+	afx_msg void OnGeometryZoominBinuerinterpolation();
+	afx_msg void OnGeometryZoomoutSubsampling();
+	afx_msg void OnGeometryZoomoutMeanSub();
+	afx_msg void OnGeometryZoomoutAvg();
+	afx_msg void OnGeometryRotate();
 };
 
 #ifndef _DEBUG  // ImageProcessing_20212155View.cpp의 디버그 버전

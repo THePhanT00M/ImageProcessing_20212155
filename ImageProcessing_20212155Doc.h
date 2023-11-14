@@ -56,6 +56,11 @@ public:
 	int imageWidth;
 	int imageHeight;
 	int depth;
+
+	int gImageWidth;
+	int gImageHeight;
+	unsigned char** gResultImage;
+
 	int LoadImageFile(CArchive& ar);
 	void LoadSecondImageFile(CArchive& ar);
 };

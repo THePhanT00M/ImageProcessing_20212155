@@ -68,13 +68,26 @@
 #define ID_32806                        32806
 #define ID_MOPOLOGY_EROSION             32807
 #define ID_MOPOLOGY_DILATION            32808
+#define ID_32809                        32809
+#define ID_32810                        32810
+#define ID_MOPOLOGY_OPENNING            32811
+#define ID_MOPLOGY_CLOSING              32812
+#define ID_32813                        32813
+#define ID_32814                        32814
+#define ID_GEOMETRY_ZOOMIN_PIXEL_COPY   32815
+#define ID_GEOMETRY_ZOOMIN_BINUERINTERPOLATION 32816
+#define ID_GEOMETRY_ZOOMOUT_SUBSAMPLING 32817
+#define ID_GEOMETRY_ZOOMOUT_MEAN_SUB    32818
+#define ID_GEOMETRY_ZOOMOUT_AVG         32819
+#define ID_32820                        32820
+#define ID_GEOMETRY_ROTATE              32821
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        310
-#define _APS_NEXT_COMMAND_VALUE         32809
+#define _APS_NEXT_COMMAND_VALUE         32822
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           310
 #endif

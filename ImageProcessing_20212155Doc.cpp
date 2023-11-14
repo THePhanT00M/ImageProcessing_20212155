@@ -35,6 +35,7 @@ CImageProcessing20212155Doc::CImageProcessing20212155Doc() noexcept
 	inputImage2 = NULL;
 	resultImage = NULL;
 
+	gResultImage = NULL;
 }
 
 CImageProcessing20212155Doc::~CImageProcessing20212155Doc()
@@ -52,6 +53,10 @@ CImageProcessing20212155Doc::~CImageProcessing20212155Doc()
 	if (resultImage != NULL) {
 		for (i = 0; i < imageHeight; i++) free(resultImage[i]);
 		free(resultImage);
+	}
+	if (gResultImage != NULL) {
+		for (i = 0; i < gImageHeight; i++) free(gResultImage[i]);
+		free(gResultImage);
 	}
 }
 

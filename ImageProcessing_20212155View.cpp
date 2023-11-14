@@ -17,6 +17,8 @@
 #define new DEBUG_NEW
 #endif
 
+#define PI 3.141592653589793238
+
 
 // CImageProcessing20212155View
 
@@ -50,6 +52,14 @@ BEGIN_MESSAGE_MAP(CImageProcessing20212155View, CScrollView)
 	ON_COMMAND(ID_MOPOLOGY_BINARIZATION, &CImageProcessing20212155View::OnMopologyBinarization)
 	ON_COMMAND(ID_MOPOLOGY_EROSION, &CImageProcessing20212155View::OnMopologyErosion)
 	ON_COMMAND(ID_MOPOLOGY_DILATION, &CImageProcessing20212155View::OnMopologyDilation)
+	ON_COMMAND(ID_MOPOLOGY_OPENNING, &CImageProcessing20212155View::OnMopologyOpenning)
+	ON_COMMAND(ID_MOPLOGY_CLOSING, &CImageProcessing20212155View::OnMoplogyClosing)
+	ON_COMMAND(ID_GEOMETRY_ZOOMIN_PIXEL_COPY, &CImageProcessing20212155View::OnGeometryZoominPixelCopy)
+	ON_COMMAND(ID_GEOMETRY_ZOOMIN_BINUERINTERPOLATION, &CImageProcessing20212155View::OnGeometryZoominBinuerinterpolation)
+	ON_COMMAND(ID_GEOMETRY_ZOOMOUT_SUBSAMPLING, &CImageProcessing20212155View::OnGeometryZoomoutSubsampling)
+	ON_COMMAND(ID_GEOMETRY_ZOOMOUT_MEAN_SUB, &CImageProcessing20212155View::OnGeometryZoomoutMeanSub)
+	ON_COMMAND(ID_GEOMETRY_ZOOMOUT_AVG, &CImageProcessing20212155View::OnGeometryZoomoutAvg)
+	ON_COMMAND(ID_GEOMETRY_ROTATE, &CImageProcessing20212155View::OnGeometryRotate)
 END_MESSAGE_MAP()
 
 // CImageProcessing20212155View 생성/소멸
@@ -122,6 +132,20 @@ void CImageProcessing20212155View::OnDraw(CDC* pDC)
 					pDC->SetPixel(2 * (pDoc->imageWidth + 20) + x, y, RGB(pDoc->inputImage2[y][x * 3 + 0], pDoc->inputImage2[y][x * 3 + 1], pDoc->inputImage2[y][x * 3 + 2]));
 		}
 	}
+
+	if (pDoc->gResultImage != NULL) {
+		if (pDoc->depth == 1) {	//흑백일 때 
+			for (y = 0; y < pDoc->gImageHeight; y++)
+				for (x = 0; x < pDoc->gImageWidth; x++)
+					pDC->SetPixel(x, pDoc->imageHeight + 20 + y, RGB(pDoc->gResultImage[y][x], pDoc->gResultImage[y][x], pDoc->gResultImage[y][x]));
+		}
+		else {	//컬러일 때
+			for (y = 0; y < pDoc->gImageHeight; y++)
+				for (x = 0; x < pDoc->gImageWidth; x++)
+					pDC->SetPixel(x, pDoc->imageHeight + 20 + y, RGB(pDoc->gResultImage[y][x * 3 + 0], pDoc->gResultImage[y][x * 3 + 1], pDoc->gResultImage[y][x * 3 + 2]));
+		}
+	}
+
 	// TODO: 여기에 원시 데이터에 대한 그리기 코드를 추가합니다.
 }
 
@@ -1160,6 +1184,379 @@ void CImageProcessing20212155View::OnMopologyDilation()
 					}
 				}
 				pDoc->resultImage[y][x * 3 + 2] = max;
+			}
+		}
+	}
+
+	Invalidate();
+}
+
+
+void CImageProcessing20212155View::OnMopologyOpenning()
+{
+	// TODO: 여기에 명령 처리기 코드를 추가합니다.
+	OnMopologyErosion();
+	CopyResultToInput();
+	OnMopologyErosion();
+	CopyResultToInput();
+	OnMopologyErosion();
+	CopyResultToInput();
+
+	OnMopologyDilation();
+	CopyResultToInput();
+	OnMopologyDilation();
+	CopyResultToInput();
+	OnMopologyDilation();
+	CopyResultToInput();
+}
+
+
+void CImageProcessing20212155View::OnMoplogyClosing()
+{
+	// TODO: 여기에 명령 처리기 코드를 추가합니다.
+	OnMopologyDilation();
+	CopyResultToInput();
+	OnMopologyDilation();
+	CopyResultToInput();
+	OnMopologyDilation();
+	CopyResultToInput();
+
+	OnMopologyErosion();
+	CopyResultToInput();
+	OnMopologyErosion();
+	CopyResultToInput();
+	OnMopologyErosion();
+	CopyResultToInput();
+}
+
+
+void CImageProcessing20212155View::CopyResultToInput()
+{
+	// TODO: 여기에 구현 코드 추가.
+	CImageProcessing20212155Doc* pDoc = GetDocument();
+
+	int x, y;
+
+	for (y = 1; y < pDoc->imageHeight - 1; y++) {
+		for (x = 1; x < pDoc->imageWidth * pDoc->depth; x++) {
+			pDoc->inputImage[y][x] = pDoc->resultImage[y][x];
+		}
+	}
+}
+
+
+void CImageProcessing20212155View::OnGeometryZoominPixelCopy()
+{
+	// TODO: 여기에 명령 처리기 코드를 추가합니다.
+	CImageProcessing20212155Doc* pDoc = GetDocument();
+	int x, y, i, j;
+
+	int xscale = 3;
+	int yscale = 2;
+
+	if (pDoc->gResultImage != NULL) {
+		for (i = 0; i < pDoc->gImageHeight; i++) free(pDoc->gResultImage[i]);
+		free(pDoc->gResultImage);
+	}
+
+	pDoc->gImageWidth = pDoc->imageWidth * xscale;
+	pDoc->gImageHeight = pDoc->imageHeight * yscale;
+
+	//메모리 할당
+	pDoc->gResultImage = (unsigned char**)malloc(pDoc->gImageHeight * sizeof(unsigned char*));
+	for (i = 0; i < pDoc->gImageHeight; i++) {
+		pDoc->gResultImage[i] = (unsigned char*)malloc(pDoc->gImageWidth * pDoc->depth);
+	}
+
+	/*
+	//전방향사상
+	for (y = 0; y < pDoc->imageHeight; y++) {
+		for (x = 0; x < pDoc->imageWidth; x++) {
+			for (j = 0; j < yscale; j++) {
+				for (i = 0; i < xscale; i++) {
+					if (pDoc->depth == 1) {
+						pDoc->gResultImage[yscale * y + j][xscale * x + i] = pDoc->inputImage[y][x];
+					}
+					else {
+						pDoc->gResultImage[yscale * y + j][(xscale * x + i) * 3 + 0] = pDoc->inputImage[y][x * 3 + 0];
+						pDoc->gResultImage[yscale * y + j][(xscale * x + i) * 3 + 1] = pDoc->inputImage[y][x * 3 + 1];
+						pDoc->gResultImage[yscale * y + j][(xscale * x + i) * 3 + 2] = pDoc->inputImage[y][x * 3 + 2];
+					}
+				}
+			}
+		}
+	}
+	*/
+
+	//역방향 사상
+	for (y = 0; y < pDoc->gImageHeight; y++) {
+		for (x = 0; x < pDoc->gImageWidth; x++) {
+			if (pDoc->depth == 1) {
+				pDoc->gResultImage[y][x] = pDoc->inputImage[y / yscale][x / xscale];
+			}
+			else {
+				pDoc->gResultImage[y][x * 3 + 0] = pDoc->inputImage[y / yscale][(x / xscale) * 3 + 0];
+				pDoc->gResultImage[y][x * 3 + 1] = pDoc->inputImage[y / yscale][(x / xscale) * 3 + 1];
+				pDoc->gResultImage[y][x * 3 + 2] = pDoc->inputImage[y / yscale][(x / xscale) * 3 + 2];
+			}
+		}
+	}
+
+	Invalidate();
+}
+
+
+void CImageProcessing20212155View::OnGeometryZoominBinuerinterpolation()
+{
+	// TODO: 여기에 명령 처리기 코드를 추가합니다.
+	CImageProcessing20212155Doc* pDoc = GetDocument();
+	int x, y, i, j;
+
+	float xscale = 2.3;	//3 . . .
+	float yscale = 1.7;	//2 . . .
+	float src_x, src_y;
+	float alpha, beta;
+	int Ax, Ay, Bx, By, Cx, Cy, Dx, Dy;
+	int E, F;
+
+	if (pDoc->gResultImage != NULL) {
+		for (i = 0; i < pDoc->gImageHeight; i++)
+			free(pDoc->gResultImage[i]);
+		free(pDoc->gResultImage);
+	}
+
+	pDoc->gImageWidth = pDoc->imageWidth * xscale;
+	pDoc->gImageHeight = pDoc->imageHeight * yscale;
+	//메모리 할당
+	pDoc->gResultImage = (unsigned char**)malloc(pDoc->gImageHeight * sizeof(unsigned char*));
+	for (i = 0; i < pDoc->gImageHeight; i++) {
+		pDoc->gResultImage[i] = (unsigned char*)malloc(pDoc->gImageWidth * pDoc->depth);
+	}
+
+	for (y = 0; y < pDoc->gImageHeight; y++) {
+		for (x = 0; x < pDoc->gImageWidth; x++) {
+			src_x = x / xscale;
+			src_y = y / yscale;
+
+			/*alpha = src_x - (int)src_x;
+			beta = src_y - (int)src_y;*/
+			alpha = src_x - src_x;
+			beta = src_y - src_y;
+
+			/*Ax = (int)src_x;
+			Ay = (int)src_y;*/
+			Ax = src_x;
+			Ay = src_y;
+			Bx = Ax + 1;
+			By = Ay;
+			Cx = Ax;
+			Cy = Ay + 1;
+			Dx = Ax + 1;
+			Dy = Ax + 1;
+
+			if (Bx > pDoc->imageWidth - 1) Bx = pDoc->imageWidth - 1;
+			if (Cy > pDoc->imageHeight - 1) Cy = pDoc->imageHeight - 1;
+			if (Dx > pDoc->imageWidth - 1) Dx = pDoc->imageWidth - 1;
+			if (Dy > pDoc->imageHeight - 1) Dy = pDoc->imageHeight - 1;
+
+			if (pDoc->depth == 1) {
+				E = (1 - alpha) * pDoc->inputImage[Ay][Ax] + alpha * pDoc->inputImage[By][Bx];
+				F = (1 - alpha) * pDoc->inputImage[Cy][Cx] + alpha * pDoc->inputImage[Dy][Dx];
+				pDoc->gResultImage[y][x] = (1 - beta) * E + beta * F;
+			}
+			else {
+				E = (1 - alpha) * pDoc->inputImage[Ay][Ax * 3 + 0] + alpha * pDoc->inputImage[By][Bx * 3 + 0];
+				F = (1 - alpha) * pDoc->inputImage[Cy][Cx * 3 + 0] + alpha * pDoc->inputImage[Dy][Dx * 3 + 0];
+				pDoc->gResultImage[y][x * 3 + 0] = (1 - beta) * E + beta * F;
+
+				E = (1 - alpha) * pDoc->inputImage[Ay][Ax * 3 + 1] + alpha * pDoc->inputImage[By][Bx * 3 + 1];
+				F = (1 - alpha) * pDoc->inputImage[Cy][Cx * 3 + 1] + alpha * pDoc->inputImage[Dy][Dx * 3 + 1];
+				pDoc->gResultImage[y][x * 3 + 1] = (1 - beta) * E + beta * F;
+
+				E = (1 - alpha) * pDoc->inputImage[Ay][Ax * 3 + 2] + alpha * pDoc->inputImage[By][Bx * 3 + 2];
+				F = (1 - alpha) * pDoc->inputImage[Cy][Cx * 3 + 2] + alpha * pDoc->inputImage[Dy][Dx * 3 + 2];
+				pDoc->gResultImage[y][x * 3 + 2] = (1 - beta) * E + beta * F;
+			}
+		}
+	}
+
+	Invalidate();
+}
+
+
+void CImageProcessing20212155View::OnGeometryZoomoutSubsampling()
+{
+	// TODO: 여기에 명령 처리기 코드를 추가합니다.
+	CImageProcessing20212155Doc* pDoc = GetDocument();
+	int x, y, i, j;
+
+	int xscale = 3;
+	int yscale = 2;
+
+	if (pDoc->gResultImage != NULL) {
+		for (i = 0; i < pDoc->gImageHeight; i++) free(pDoc->gResultImage[i]);
+		free(pDoc->gResultImage);
+	}
+
+	pDoc->gImageWidth = pDoc->imageWidth / xscale;
+	pDoc->gImageHeight = pDoc->imageHeight / yscale;
+	//메모리 할당
+	pDoc->gResultImage = (unsigned char**)malloc(pDoc->gImageHeight * sizeof(unsigned char*));
+	for (i = 0; i < pDoc->gImageHeight; i++) {
+		pDoc->gResultImage[i] = (unsigned char*)malloc(pDoc->gImageWidth * pDoc->depth);
+	}
+
+	//역방향
+	for (y = 0; y < pDoc->gImageHeight; y++) {
+		for (x = 0; x < pDoc->gImageWidth; x++) {
+			if (pDoc->depth == 1) {
+				pDoc->gResultImage[y][x] = pDoc->inputImage[y * yscale][x * xscale];
+			}
+			else {
+				pDoc->gResultImage[y][x * 3 + 0] = pDoc->inputImage[y * yscale][(x * xscale) * 3 + 0];
+				pDoc->gResultImage[y][x * 3 + 1] = pDoc->inputImage[y * yscale][(x * xscale) * 3 + 1];
+				pDoc->gResultImage[y][x * 3 + 2] = pDoc->inputImage[y * yscale][(x * xscale) * 3 + 2];
+			}
+
+		}
+	}
+
+	Invalidate();
+}
+
+
+void CImageProcessing20212155View::OnGeometryZoomoutMeanSub()
+{
+	// TODO: 여기에 명령 처리기 코드를 추가합니다.
+	OnRegionSmoothing();	//흐리게하기 meaning
+	CopyResultToInput();
+	OnGeometryZoomoutSubsampling();
+}
+
+
+void CImageProcessing20212155View::OnGeometryZoomoutAvg()
+{
+	// TODO: 여기에 명령 처리기 코드를 추가합니다.
+	CImageProcessing20212155Doc* pDoc = GetDocument();
+	int x, y, i, j;
+	int src_x, src_y;
+	int sum;
+	int rsum, gsum, bsum;
+
+	int xscale = 3;
+	int yscale = 2;
+
+	if (pDoc->gResultImage != NULL) {
+		for (i = 0; i < pDoc->gImageHeight; i++) free(pDoc->gResultImage[i]);
+		free(pDoc->gResultImage);
+	}
+
+	pDoc->gImageWidth = pDoc->imageWidth / xscale;
+	pDoc->gImageHeight = pDoc->imageHeight / yscale;
+	//메모리 할당
+	pDoc->gResultImage = (unsigned char**)malloc(pDoc->gImageHeight * sizeof(unsigned char*));
+	for (i = 0; i < pDoc->gImageHeight; i++) {
+		pDoc->gResultImage[i] = (unsigned char*)malloc(pDoc->gImageWidth * pDoc->depth);
+	}
+
+	//전방향
+	for (y = 0; y < pDoc->imageHeight - yscale; y += yscale) {
+		for (x = 0; x < pDoc->imageWidth - xscale; x += xscale) {
+			if (pDoc->depth == 1) {
+				sum = 0;
+				for (j = 0; j < yscale; j++) {
+					for (i = 0; i < xscale; i++) {
+						src_x = x + i;
+						src_y = y + j;
+						sum += pDoc->inputImage[src_y][src_x];
+					}
+				}
+				pDoc->gResultImage[y / yscale][x / xscale] = sum / (xscale * yscale);
+			}
+			else {
+				rsum = gsum = bsum = 0;
+				for (j = 0; j < yscale; j++) {
+					for (i = 0; i < xscale; i++) {
+						src_x = x + i;
+						src_y = y + j;
+						rsum += pDoc->inputImage[src_y][src_x * 3 + 0];
+						gsum += pDoc->inputImage[src_y][src_x * 3 + 1];
+						bsum += pDoc->inputImage[src_y][src_x * 3 + 2];
+					}
+				}
+				pDoc->gResultImage[y / yscale][(x / xscale) * 3 + 0] = rsum / (xscale * yscale);
+				pDoc->gResultImage[y / yscale][(x / xscale) * 3 + 1] = gsum / (xscale * yscale);
+				pDoc->gResultImage[y / yscale][(x / xscale) * 3 + 2] = bsum / (xscale * yscale);
+			}
+		}
+	}
+
+	Invalidate();
+}
+
+
+void CImageProcessing20212155View::OnGeometryRotate()
+{
+	// TODO: 여기에 명령 처리기 코드를 추가합니다.
+	CImageProcessing20212155Doc* pDoc = GetDocument();
+
+	int angle = 120; //degree
+	float radian;
+	int x, y, i;
+	int Cx, Cy, Hy;
+	int x_source, y_source;
+	int xdiff, ydiff;
+
+	radian = PI / 180 * angle;
+
+	if (pDoc->gResultImage != NULL) {
+		for (i = 0; i < pDoc->gImageHeight; i++)
+			free(pDoc->gResultImage[i]);
+		free(pDoc->gResultImage);
+	}
+
+	pDoc->gImageWidth = pDoc->imageHeight * fabs(cos(PI / 2 - radian)) + pDoc->imageWidth * fabs(cos(radian));
+	pDoc->gImageHeight = pDoc->imageHeight * fabs(cos(radian)) + pDoc->imageWidth * fabs(cos(PI / 2 - radian));
+	//메모리 할당
+	pDoc->gResultImage = (unsigned char**)malloc(pDoc->gImageHeight * sizeof(unsigned char*));
+	for (i = 0; i < pDoc->gImageHeight; i++) {
+		pDoc->gResultImage[i] = (unsigned char*)malloc(pDoc->gImageWidth * pDoc->depth);
+	}
+
+	//중심점
+	Cx = pDoc->imageWidth / 2;
+	Cy = pDoc->imageHeight / 2;
+	//y의 마지막좌표
+	Hy = pDoc->imageHeight - 1;
+
+	xdiff = (pDoc->gImageWidth - pDoc->imageWidth) / 2;
+	ydiff = (pDoc->gImageHeight - pDoc->imageHeight) / 2;
+
+	for (y = -ydiff; y < pDoc->gImageHeight - ydiff; y++) {
+		for (x = -xdiff; x < pDoc->gImageWidth - xdiff; x++) {
+
+			x_source = ((Hy - y) - Cy) * sin(radian) + (x - Cx) * cos(radian) + Cx;
+			y_source = Hy - (((Hy - y) - Cy) * cos(radian) - (x - Cx) * sin(radian) + Cy);
+
+			if (pDoc->depth == 1) {
+				if (x_source < 0 || x_source > pDoc->imageWidth - 1 || y_source < 0 || y_source > pDoc->imageHeight - 1) {
+					pDoc->gResultImage[y + ydiff][x + xdiff] = 255;
+				}
+				else {
+					pDoc->gResultImage[y + ydiff][x + xdiff] = pDoc->inputImage[y_source][x_source];
+				}
+			}
+			else {
+				if (x_source < 0 || x_source > pDoc->imageWidth - 1 || y_source < 0 || y_source > pDoc->imageHeight - 1) {
+					pDoc->gResultImage[y + ydiff][(x + xdiff) * 3 + 0] = 255;
+					pDoc->gResultImage[y + ydiff][(x + xdiff) * 3 + 1] = 255;
+					pDoc->gResultImage[y + ydiff][(x + xdiff) * 3 + 2] = 255;
+				}
+				else {
+					pDoc->gResultImage[y + ydiff][(x + xdiff) * 3 + 0] = pDoc->inputImage[y_source][x_source * 3 + 0];
+					pDoc->gResultImage[y + ydiff][(x + xdiff) * 3 + 1] = pDoc->inputImage[y_source][x_source * 3 + 1];
+					pDoc->gResultImage[y + ydiff][(x + xdiff) * 3 + 2] = pDoc->inputImage[y_source][x_source * 3 + 2];
+				}
 			}
 		}
 	}
