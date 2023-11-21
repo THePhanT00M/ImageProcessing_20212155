@@ -183,6 +183,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CAngleInputDlg.h" />
     <ClInclude Include="ChildFrm.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="ImageProcessing_20212155.h" />
@@ -194,6 +195,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CAngleInputDlg.cpp" />
     <ClCompile Include="ChildFrm.cpp" />
     <ClCompile Include="ImageProcessing_20212155.cpp" />
     <ClCompile Include="ImageProcessing_20212155Doc.cpp" />

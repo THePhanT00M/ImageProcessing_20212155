@@ -13,6 +13,8 @@
 #include "ImageProcessing_20212155Doc.h"
 #include "ImageProcessing_20212155View.h"
 
+#include "CAngleInputDlg.h"
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -60,6 +62,10 @@ BEGIN_MESSAGE_MAP(CImageProcessing20212155View, CScrollView)
 	ON_COMMAND(ID_GEOMETRY_ZOOMOUT_MEAN_SUB, &CImageProcessing20212155View::OnGeometryZoomoutMeanSub)
 	ON_COMMAND(ID_GEOMETRY_ZOOMOUT_AVG, &CImageProcessing20212155View::OnGeometryZoomoutAvg)
 	ON_COMMAND(ID_GEOMETRY_ROTATE, &CImageProcessing20212155View::OnGeometryRotate)
+	ON_COMMAND(ID_GEOMETRY_MIRROR, &CImageProcessing20212155View::OnGeometryMirror)
+	ON_COMMAND(ID_GEOMETRY_FLIP, &CImageProcessing20212155View::OnGeometryFlip)
+	ON_COMMAND(ID_GEOMETRY_WARPING, &CImageProcessing20212155View::OnGeometryWarping)
+	ON_COMMAND(ID_GEOMETRY_MORPING, &CImageProcessing20212155View::OnGeometryMorping)
 END_MESSAGE_MAP()
 
 // CImageProcessing20212155View 생성/소멸
@@ -1500,12 +1506,18 @@ void CImageProcessing20212155View::OnGeometryRotate()
 	// TODO: 여기에 명령 처리기 코드를 추가합니다.
 	CImageProcessing20212155Doc* pDoc = GetDocument();
 
-	int angle = 120; //degree
+	CAngleInputDlg dlg;
+
+	int angle = 0; //degree
 	float radian;
 	int x, y, i;
 	int Cx, Cy, Hy;
 	int x_source, y_source;
 	int xdiff, ydiff;
+
+	dlg.m_iAngle = angle;
+	if (dlg.DoModal() == IDCANCEL) return;
+	angle = dlg.m_iAngle;
 
 	radian = PI / 180 * angle;
 
@@ -1562,4 +1574,174 @@ void CImageProcessing20212155View::OnGeometryRotate()
 	}
 
 	Invalidate();
+}
+
+
+void CImageProcessing20212155View::OnGeometryMirror()
+{
+	// TODO: 여기에 명령 처리기 코드를 추가합니다.
+	CImageProcessing20212155Doc* pDoc = GetDocument();
+	int x, y;
+
+	for (y = 0; y < pDoc->imageHeight; y++) {
+		for (x = 0; x < pDoc->imageWidth; x++) {
+			if (pDoc->depth == 1) {
+				pDoc->resultImage[y][pDoc->imageWidth - 1 - x] = pDoc->inputImage[y][x];
+			}
+			else {
+				pDoc->resultImage[y][(pDoc->imageWidth - 1 - x) * 3 + 0] = pDoc->inputImage[y][x * 3 + 0];
+				pDoc->resultImage[y][(pDoc->imageWidth - 1 - x) * 3 + 1] = pDoc->inputImage[y][x * 3 + 1];
+				pDoc->resultImage[y][(pDoc->imageWidth - 1 - x) * 3 + 2] = pDoc->inputImage[y][x * 3 + 2];
+			}
+		}
+	}
+
+	Invalidate();
+}
+
+
+void CImageProcessing20212155View::OnGeometryFlip()
+{
+	// TODO: 여기에 명령 처리기 코드를 추가합니다.
+	CImageProcessing20212155Doc* pDoc = GetDocument();
+	int x, y;
+
+	for (y = 0; y < pDoc->imageHeight; y++) {
+		for (x = 0; x < pDoc->imageWidth; x++) {
+			if (pDoc->depth == 1) {
+				pDoc->resultImage[pDoc->imageHeight - 1 - y][x] = pDoc->inputImage[y][x];
+			}
+			else {
+				pDoc->resultImage[pDoc->imageHeight - 1 - y][x * 3 + 0] = pDoc->inputImage[y][x * 3 + 0];
+				pDoc->resultImage[pDoc->imageHeight - 1 - y][x * 3 + 1] = pDoc->inputImage[y][x * 3 + 1];
+				pDoc->resultImage[pDoc->imageHeight - 1 - y][x * 3 + 2] = pDoc->inputImage[y][x * 3 + 2];
+			}
+		}
+	}
+
+	Invalidate();
+}
+
+typedef struct {
+	int Px;
+	int Py;
+	int Qx;
+	int Qy;
+} control_line;
+
+control_line mctrl_source = { 100, 100, 150, 150 };
+control_line mctrl_dest = { 100, 100, 200, 200 };
+
+
+void CImageProcessing20212155View::OnGeometryWarping()
+{
+	// TODO: 여기에 명령 처리기 코드를 추가합니다.
+	CImageProcessing20212155Doc* pDoc = GetDocument();
+	control_line source_lines[5] = {
+		{100, 100, 150, 150},
+		{0, 0, pDoc->imageWidth - 1, 0},
+		{pDoc->imageWidth - 1, 0, pDoc->imageWidth - 1, pDoc->imageHeight - 1},
+		{pDoc->imageWidth - 1, pDoc->imageHeight - 1, 0, pDoc->imageHeight - 1},
+		{0, pDoc->imageHeight - 1, 0, 0}
+	};
+	control_line dest_lines[5] = {
+		{100, 100, 200, 200},
+		{0, 0, pDoc->imageWidth - 1, 0},
+		{pDoc->imageWidth - 1, 0, pDoc->imageWidth - 1, pDoc->imageHeight - 1},
+		{pDoc->imageWidth - 1, pDoc->imageHeight - 1, 0, pDoc->imageHeight - 1},
+		{0, pDoc->imageHeight - 1, 0, 0}
+	};
+
+	source_lines[0] = mctrl_source;
+	dest_lines[0] = mctrl_dest;
+
+	int x, y;
+
+	double u;	// 수직 교차점 위치
+	double h;	// 제어선으로부터 픽셀의 수직변위(수직거리)
+	double d;	// 제어선과 픽셀 사이의 거리
+	double tx, ty;	// 결과영상 픽셀에 대응되는 입력 영상 픽셀 사이의 변위의 합
+	double xp, yp;	// 각 제어선에 대해 계산된 입력 영상의 대응되는 픽셀 위치
+	double weight;	// 각 제어선의 가중치
+	double totalWeight;	// 전체 가중치의 합
+	double a = 0.001;
+	double b = 2.0;
+	double p = 0.75;
+
+	int x1, y1, x2, y2;
+	int src_x1, src_y1, src_x2, src_y2;
+	double src_line_length, dest_line_length;
+
+	int num_lines = 5;	//제어선의 수
+	int line;
+	int source_x, source_y;
+
+	for (y = 0; y < pDoc->imageHeight; y++) {
+		for (x = 0; x < pDoc->imageWidth; x++) {
+			tx = 0.0;
+			ty = 0.0;
+			totalWeight = 0.0;
+
+			for (line = 0; line < num_lines; line++) {
+				x1 = dest_lines[line].Px;
+				y1 = dest_lines[line].Py;
+				x2 = dest_lines[line].Qx;
+				y2 = dest_lines[line].Qy;
+
+				dest_line_length = sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+
+				u = (double)((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1))
+					/ (double)((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+				h = ((y - y1) * (x2 - x1) - (x - x1) * (y2 - y1)) / dest_line_length;
+
+				if (u < 0)
+					d = sqrt((x - x1) * (x - x1) + (y - y1) * (y - y1));
+				else if (u > 1)
+					d = sqrt((x - x2) * (x - x2) + (y - y2) * (y - y2));
+				else
+					d = fabs(h);
+
+				src_x1 = source_lines[line].Px;
+				src_y1 = source_lines[line].Py;
+				src_x2 = source_lines[line].Qx;
+				src_y2 = source_lines[line].Qy;
+
+				src_line_length = sqrt((src_x2 - src_x1) * (src_x2 - src_x1) + (src_y2 - src_y1) * (src_y2 - src_y1));
+				xp = src_x1 + u * (src_x2 - src_x1) - h * (src_y2 - src_y1) / src_line_length;
+				yp = src_y1 + u * (src_y2 - src_y1) + h * (src_x2 - src_x1) / src_line_length;
+
+				weight = pow(pow(dest_line_length, p) / (a + d), b);
+
+				tx += (xp - x) * weight;
+				ty += (yp - y) * weight;
+				totalWeight += weight;
+			}
+
+			source_x = x + tx / totalWeight;
+			source_y = y + ty / totalWeight;
+
+			if (source_x < 0) source_x = 0;
+			else if (source_x > pDoc->imageWidth - 1) source_x = pDoc->imageWidth - 1;
+			if (source_y < 0) source_y = 0;
+			else if (source_y > pDoc->imageHeight - 1) source_y = pDoc->imageHeight - 1;
+
+			if (pDoc->depth == 1) {
+				pDoc->resultImage[y][x] = pDoc->inputImage[source_y][source_x];
+			}
+			else {
+				pDoc->resultImage[y][x * 3 + 0] = pDoc->inputImage[source_y][source_x * 3 + 0];
+				pDoc->resultImage[y][x * 3 + 1] = pDoc->inputImage[source_y][source_x * 3 + 1];
+				pDoc->resultImage[y][x * 3 + 2] = pDoc->inputImage[source_y][source_x * 3 + 2];
+			}
+		}
+	}
+
+	Invalidate();
+}
+
+void CImageProcessing20212155View::OnGeometryMorping()
+{
+	// TODO: 여기에 명령 처리기 코드를 추가합니다.
+	CImageProcessing20212155Doc* pDoc = GetDocument();
+	
 }
