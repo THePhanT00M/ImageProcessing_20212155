@@ -15,6 +15,12 @@
 
 #include "CAngleInputDlg.h"
 
+#include<math.h>
+#include<vfw.h>
+
+#define MORPHING 8
+int viewMode;
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -66,6 +72,9 @@ BEGIN_MESSAGE_MAP(CImageProcessing20212155View, CScrollView)
 	ON_COMMAND(ID_GEOMETRY_FLIP, &CImageProcessing20212155View::OnGeometryFlip)
 	ON_COMMAND(ID_GEOMETRY_WARPING, &CImageProcessing20212155View::OnGeometryWarping)
 	ON_COMMAND(ID_GEOMETRY_MORPING, &CImageProcessing20212155View::OnGeometryMorping)
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONUP()
+	ON_COMMAND(ID_AVI_VIEW, &CImageProcessing20212155View::OnAviView)
 END_MESSAGE_MAP()
 
 // CImageProcessing20212155View 생성/소멸
@@ -73,7 +82,7 @@ END_MESSAGE_MAP()
 CImageProcessing20212155View::CImageProcessing20212155View() noexcept
 {
 	// TODO: 여기에 생성 코드를 추가합니다.
-
+	bAviMode = false;
 }
 
 CImageProcessing20212155View::~CImageProcessing20212155View()
@@ -96,8 +105,13 @@ void CImageProcessing20212155View::OnDraw(CDC* pDC)
 	ASSERT_VALID(pDoc);
 	if (!pDoc)
 		return;
-
 	int x, y;
+
+	if (bAviMode) {
+		LoadAviFile(pDC);
+		bAviMode = false;
+		return;
+	}
 
 	if (pDoc->inputImage != NULL) {
 		if (pDoc->depth == 1) {	//흑백일 때
@@ -110,32 +124,31 @@ void CImageProcessing20212155View::OnDraw(CDC* pDC)
 				for (x = 0; x < pDoc->imageWidth; x++)
 					pDC->SetPixel(x, y, RGB(pDoc->inputImage[y][x * 3 + 0], pDoc->inputImage[y][x * 3 + 1], pDoc->inputImage[y][x * 3 + 2]));
 		}
-		
+
+	}
+	if (pDoc->inputImage2 != NULL) {
+		if (pDoc->depth == 1) {	//흑백일 때
+			for (y = 0; y < pDoc->imageHeight; y++)
+				for (x = 0; x < pDoc->imageWidth; x++)
+					pDC->SetPixel(x + pDoc->imageWidth + 30, y, RGB(pDoc->inputImage2[y][x], pDoc->inputImage2[y][x], pDoc->inputImage2[y][x]));
+		}
+		else {	//컬러일 때
+			for (y = 0; y < pDoc->imageHeight; y++)
+				for (x = 0; x < pDoc->imageWidth; x++)
+					pDC->SetPixel(x + pDoc->imageWidth + 30, y, RGB(pDoc->inputImage2[y][x * 3 + 0], pDoc->inputImage2[y][x * 3 + 1], pDoc->inputImage2[y][x * 3 + 2]));
+		}
 	}
 
 	if (pDoc->resultImage != NULL) {
 		if (pDoc->depth == 1) {	//흑백일 때 
 			for (y = 0; y < pDoc->imageHeight; y++)
 				for (x = 0; x < pDoc->imageWidth; x++)
-					pDC->SetPixel(pDoc->imageWidth + 20 + x, y, RGB(pDoc->resultImage[y][x], pDoc->resultImage[y][x], pDoc->resultImage[y][x]));
+					pDC->SetPixel(x + (pDoc->imageWidth * 2) + 60, y, RGB(pDoc->resultImage[y][x], pDoc->resultImage[y][x], pDoc->resultImage[y][x]));
 		}
 		else {	//컬러일 때
 			for (y = 0; y < pDoc->imageHeight; y++)
 				for (x = 0; x < pDoc->imageWidth; x++)
-					pDC->SetPixel(pDoc->imageWidth + 20 + x, y, RGB(pDoc->resultImage[y][x * 3 + 0], pDoc->resultImage[y][x * 3 + 1], pDoc->resultImage[y][x * 3 + 2]));
-		}
-	}
-
-	if (pDoc->inputImage2 != NULL) {
-		if (pDoc->depth == 1) {	//흑백일 때
-			for (y = 0; y < pDoc->imageHeight; y++)
-				for (x = 0; x < pDoc->imageWidth; x++)
-					pDC->SetPixel(2 * (pDoc->imageWidth + 20) + x, y, RGB(pDoc->inputImage2[y][x], pDoc->inputImage2[y][x], pDoc->inputImage2[y][x]));
-		}
-		else {	//컬러일 때
-			for (y = 0; y < pDoc->imageHeight; y++)
-				for (x = 0; x < pDoc->imageWidth; x++)
-					pDC->SetPixel(2 * (pDoc->imageWidth + 20) + x, y, RGB(pDoc->inputImage2[y][x * 3 + 0], pDoc->inputImage2[y][x * 3 + 1], pDoc->inputImage2[y][x * 3 + 2]));
+					pDC->SetPixel(x + (pDoc->imageWidth * 2) + 60, y, RGB(pDoc->resultImage[y][x * 3 + 0], pDoc->resultImage[y][x * 3 + 1], pDoc->resultImage[y][x * 3 + 2]));
 		}
 	}
 
@@ -143,15 +156,30 @@ void CImageProcessing20212155View::OnDraw(CDC* pDC)
 		if (pDoc->depth == 1) {	//흑백일 때 
 			for (y = 0; y < pDoc->gImageHeight; y++)
 				for (x = 0; x < pDoc->gImageWidth; x++)
-					pDC->SetPixel(x, pDoc->imageHeight + 20 + y, RGB(pDoc->gResultImage[y][x], pDoc->gResultImage[y][x], pDoc->gResultImage[y][x]));
+					pDC->SetPixel(x + pDoc->imageWidth + 30, y, RGB(pDoc->gResultImage[y][x], pDoc->gResultImage[y][x], pDoc->gResultImage[y][x]));
 		}
 		else {	//컬러일 때
 			for (y = 0; y < pDoc->gImageHeight; y++)
 				for (x = 0; x < pDoc->gImageWidth; x++)
-					pDC->SetPixel(x, pDoc->imageHeight + 20 + y, RGB(pDoc->gResultImage[y][x * 3 + 0], pDoc->gResultImage[y][x * 3 + 1], pDoc->gResultImage[y][x * 3 + 2]));
+					pDC->SetPixel(x + pDoc->imageWidth + 30, y, RGB(pDoc->gResultImage[y][x * 3 + 0], pDoc->gResultImage[y][x * 3 + 1], pDoc->gResultImage[y][x * 3 + 2]));
 		}
 	}
 
+	if (viewMode == MORPHING) {
+		for (int y = 0; y < pDoc->imageHeight; y++)       // 두번째 입력 영상 출력 
+			for (int x = 0; x < pDoc->imageWidth; x++)
+				pDC->SetPixel(x + pDoc->imageWidth + 30, y,
+					RGB(pDoc->inputImage2[y][x],
+						pDoc->inputImage2[y][x],
+						pDoc->inputImage2[y][x]));
+		for (int i = 0; i < 10; i++)
+			for (int y = 0; y < pDoc->imageHeight; y++)       // 모핑 결과 출력 
+				for (int x = 0; x < pDoc->imageWidth; x++)
+					pDC->SetPixel(x + pDoc->imageWidth * 2 + 60, y,
+						RGB(pDoc->morphedImage[i][y][x],
+							pDoc->morphedImage[i][y][x],
+							pDoc->morphedImage[i][y][x]));
+	}
 	// TODO: 여기에 원시 데이터에 대한 그리기 코드를 추가합니다.
 }
 
@@ -1739,9 +1767,326 @@ void CImageProcessing20212155View::OnGeometryWarping()
 	Invalidate();
 }
 
+#define NUM_FRAMES 10
+
 void CImageProcessing20212155View::OnGeometryMorping()
 {
 	// TODO: 여기에 명령 처리기 코드를 추가합니다.
 	CImageProcessing20212155Doc* pDoc = GetDocument();
+	CFileDialog dlg(true);
+	CFile file;
+
+	control_line source_lines[23] =
+	{ {116,7,207,5},{34,109,90,21},{55,249,30,128},{118,320,65,261},
+	 {123,321,171,321},{179,319,240,264},{247,251,282,135},{281,114,228,8},
+	 {78,106,123,109},{187,115,235,114},{72,142,99,128},{74,150,122,154},
+	 {108,127,123,146},{182,152,213,132},{183,159,229,157},{219,131,240,154},
+	 {80,246,117,212},{127,222,146,223},{154,227,174,221},{228,252,183,213},
+	 {114,255,186,257},{109,258,143,277},{152,278,190,262} };
+	control_line dest_lines[23] =
+	{ {120,8,200,6},{12,93,96,16},{74,271,16,110},{126,336,96,290},
+	 {142,337,181,335},{192,335,232,280},{244,259,288,108},{285,92,212,13},
+	 {96,135,136,118},{194,119,223,125},{105,145,124,134},{110,146,138,151},
+	 {131,133,139,146},{188,146,198,134},{189,153,218,146},{204,133,221,140},
+	 {91,268,122,202},{149,206,159,209},{170,209,181,204},{235,265,208,199},
+	 {121,280,205,284},{112,286,160,301},{166,301,214,287} };
+
+	double u;       // 수직 교차점의 위치   
+	double h;       // 제어선으로부터 픽셀의 수직 변위 
+	double d;       // 제어선과 픽셀 사이의 거리 
+	double tx, ty;   // 결과영상 픽셀에 대응되는 입력 영상 픽셀 사이의 변위의 합  
+	double xp, yp;  // 각 제어선에 대해 계산된 입력 영상의 대응되는 픽셀 위치     
+	double weight;     // 각 제어선의 가중치       
+	double totalWeight; // 가중치의 합          
+	double a = 0.001, b = 2.0, p = 0.75;
+	unsigned char** warpedImg;
+	unsigned char** warpedImg2;
+	int frame;
+	double fweight;
+	control_line warp_lines[23];
+	double tx2, ty2, xp2, yp2;
+	int dest_x1, dest_y1, dest_x2, dest_y2, source_x2, source_y2;
+	int x1, x2, y1, y2, src_x1, src_y1, src_x2, src_y2;
+	double src_line_length, dest_line_length;
+	int i, j;
+	int num_lines = 23;         // 제어선의 수 
+	int line, x, y, source_x, source_y, last_row, last_col;
+
+	if (dlg.DoModal() == IDOK) {
+		file.Open(dlg.GetPathName(), CFile::modeRead);
+		CArchive ar(&file, CArchive::load);
+		pDoc->LoadSecondImageFile(ar);
+		file.Close();
+	}
+
+	// 중간 프레임의 워핑 결과를 저장을 위한 기억장소 할당 
+	warpedImg = (unsigned char**)malloc(pDoc->imageHeight * sizeof(unsigned char*));
+	for (i = 0; i < pDoc->imageHeight; i++) {
+		warpedImg[i] = (unsigned char*)malloc(pDoc->imageWidth * pDoc->depth);
+	}
+
+	warpedImg2 = (unsigned char**)malloc(pDoc->imageHeight * sizeof(unsigned char*));
+	for (i = 0; i < pDoc->imageHeight; i++) {
+		warpedImg2[i] = (unsigned char*)malloc(pDoc->imageWidth * pDoc->depth);
+	}
+
+	for (i = 0; i < NUM_FRAMES; i++) {
+		pDoc->morphedImage[i] = (unsigned char**)malloc(pDoc->imageHeight * sizeof(unsigned char*));
+		for (j = 0; j < pDoc->imageHeight; j++) {
+			pDoc->morphedImage[i][j] = (unsigned char*)malloc(pDoc->imageWidth * pDoc->depth);
+		}
+	}
+	last_row = pDoc->imageHeight - 1;
+	last_col = pDoc->imageWidth - 1;
+
+	// 각 중간 프레임에 대하여 
+	for (frame = 1; frame <= NUM_FRAMES; frame++)
+	{
+		// 중간 프레임에 대한 가중치 계산 
+		fweight = (double)(frame) / NUM_FRAMES;
+
+		// 중간 프레임에 대한 제어선 계산 
+		for (line = 0; line < num_lines; line++)
+		{
+			warp_lines[line].Px = (int)(source_lines[line].Px +
+				(dest_lines[line].Px - source_lines[line].Px) * fweight);
+			warp_lines[line].Py = (int)(source_lines[line].Py +
+				(dest_lines[line].Py - source_lines[line].Py) * fweight);
+			warp_lines[line].Qx = (int)(source_lines[line].Qx +
+				(dest_lines[line].Qx - source_lines[line].Qx) * fweight);
+			warp_lines[line].Qy = (int)(source_lines[line].Qy +
+				(dest_lines[line].Qy - source_lines[line].Qy) * fweight);
+		}
+
+		// 출력 영상의 각 픽셀에 대하여 
+		for (y = 0; y < pDoc->imageHeight; y++)
+		{
+			for (x = 0; x < pDoc->imageWidth; x++)
+			{
+				totalWeight = 0.0;
+				tx = 0.0;
+				ty = 0.0;
+				tx2 = 0.0;
+				ty2 = 0.0;
+				// 각 제어선에 대하여 
+				for (line = 0; line < num_lines; line++)
+				{
+					x1 = warp_lines[line].Px;
+					y1 = warp_lines[line].Py;
+					x2 = warp_lines[line].Qx;
+					y2 = warp_lines[line].Qy;
+					dest_line_length = sqrt((double)(x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+
+					// 수직교차점의 위치 및 픽셀의 수직 변위 계산 
+					u = (double)((x - x1) * (x2 - x1) + (y - y1) * (y2 - y1)) /
+						(double)((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+					h = (double)((y - y1) * (x2 - x1) - (x - x1) * (y2 - y1)) / dest_line_length;
+
+					// 제어선과 픽셀 사이의 거리 계산 
+					if (u < 0) d = sqrt((double)(x - x1) * (x - x1) + (y - y1) * (y - y1));
+					else if (u > 1) d = sqrt((double)(x - x2) * (x - x2) + (y - y2) * (y - y2));
+					else d = fabs(h);
+
+					src_x1 = source_lines[line].Px;
+					src_y1 = source_lines[line].Py;
+					src_x2 = source_lines[line].Qx;
+					src_y2 = source_lines[line].Qy;
+					src_line_length = sqrt((double)(src_x2 - src_x1) * (src_x2 - src_x1) +
+						(src_y2 - src_y1) * (src_y2 - src_y1));
+
+					dest_x1 = dest_lines[line].Px;
+					dest_y1 = dest_lines[line].Py;
+					dest_x2 = dest_lines[line].Qx;
+					dest_y2 = dest_lines[line].Qy;
+					dest_line_length = sqrt((double)(dest_x2 - dest_x1) * (dest_x2 - dest_x1) +
+						(dest_y2 - dest_y1) * (dest_y2 - dest_y1));
+
+					// 입력 영상 1에서의 대응 픽셀 위치 계산 
+					xp = src_x1 + u * (src_x2 - src_x1) -
+						h * (src_y2 - src_y1) / src_line_length;
+					yp = src_y1 + u * (src_y2 - src_y1) +
+						h * (src_x2 - src_x1) / src_line_length;
+
+					// 입력 영상 2에서의 대응 픽셀 위치 계산 
+					xp2 = dest_x1 + u * (dest_x2 - dest_x1) -
+						h * (dest_y2 - dest_y1) / dest_line_length;
+					yp2 = dest_y1 + u * (dest_y2 - dest_y1) +
+						h * (dest_x2 - dest_x1) / dest_line_length;
+
+					// 제어선에 대한 가중치 계산 
+					weight = pow((pow((double)(dest_line_length), p) / (a + d)), b);
+
+					// 입력 영상 1의 대응 픽셀과의 변위 계산 
+					tx += (xp - x) * weight;
+					ty += (yp - y) * weight;
+
+					// 입력 영상 2의 대응 픽셀과의 변위 계산 
+					tx2 += (xp2 - x) * weight;
+					ty2 += (yp2 - y) * weight;
+
+					totalWeight += weight;
+				}
+
+				// 입력 영상 1의 대응 픽셀 위치 계산     
+				source_x = x + (int)(tx / totalWeight + 0.5);
+				source_y = y + (int)(ty / totalWeight + 0.5);
+
+				// 입력 영상 2의 대응 픽셀 위치 계산 
+				source_x2 = x + (int)(tx2 / totalWeight + 0.5);
+				source_y2 = y + (int)(ty2 / totalWeight + 0.5);
+
+				// 영상의 경계를 벗어나는지 검사 
+				if (source_x < 0) source_x = 0;
+				if (source_x > last_col) source_x = last_col;
+				if (source_y < 0) source_y = 0;
+				if (source_y > last_row) source_y = last_row;
+
+				if (source_x2 < 0) source_x2 = 0;
+				if (source_x2 > last_col) source_x2 = last_col;
+				if (source_y2 < 0) source_y2 = 0;
+				if (source_y2 > last_row) source_y2 = last_row;
+
+				// 워핑 결과 저장 
+				warpedImg[y][x] = pDoc->inputImage[source_y][source_x];
+				warpedImg2[y][x] = pDoc->inputImage2[source_y2][source_x2];
+			}
+		}
+
+		// 모핑 결과 합병 
+		for (y = 0; y < pDoc->imageHeight; y++)
+			for (x = 0; x < pDoc->imageWidth; x++) {
+				int val = (int)((1.0 - fweight) * warpedImg[y][x] +
+					fweight * warpedImg2[y][x]);
+				if (val < 0) val = 0;
+				if (val > 255) val = 255;
+				pDoc->morphedImage[frame - 1][y][x] = val;
+			}
+	}
+	viewMode = MORPHING;
+	Invalidate();
 	
+}
+
+CPoint mpos_st, mpos_end;
+
+void CImageProcessing20212155View::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+
+	mpos_st = point;
+
+	CScrollView::OnLButtonDown(nFlags, point);
+}
+
+
+void CImageProcessing20212155View::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가 및/또는 기본값을 호출합니다.
+
+	mpos_end = point;
+
+	CDC* pDC = GetDC();
+	CPen pen;
+	pen.CreatePen(PS_SOLID, 0, RGB(255, 0, 0));
+	pDC->SelectObject(&pen);
+
+	pDC->MoveTo(mpos_st);
+	pDC->LineTo(mpos_end);
+	ReleaseDC(pDC);
+
+	int Ax, Ay, Bx, By;
+	Ax = mpos_st.x;
+	Ay = mpos_st.y;
+	Bx = mpos_end.x;
+	By = mpos_end.y;
+
+	if (Ax < Bx) mctrl_source.Px = Ax - (Bx - Ax) / 2;
+	else mctrl_source.Px = Ax + (Ax - Bx) / 2;
+
+	if (Ay < By) mctrl_source.Py = Ay - (By - Ay) / 2;
+	else mctrl_source.Py = Ay + (Ay - By) / 2;
+
+	// 기준위치
+	mctrl_dest.Px = mctrl_source.Px;
+	mctrl_dest.Py = mctrl_source.Py;
+
+	mctrl_source.Qx = mpos_st.x;
+	mctrl_source.Qy = mpos_st.y;
+	mctrl_dest.Qx = mpos_end.x;
+	mctrl_dest.Qy = mpos_end.y;
+
+	CScrollView::OnLButtonUp(nFlags, point);
+}
+
+
+void CImageProcessing20212155View::OnAviView()
+{
+	// TODO: 여기에 명령 처리기 코드를 추가합니다.
+	CFileDialog dlg(true, "", "", OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, "AVI파일(*.avi)|*.avi|모든 파일(*.*)|*.*|");	//true읽기용, false 쓰기용 
+	if (dlg.DoModal() == IDOK) {
+		AVIFileName = dlg.GetPathName();
+		bAviMode = true;
+		Invalidate();
+	}
+}
+
+
+void CImageProcessing20212155View::LoadAviFile(CDC* pDC)
+{
+	// TODO: 여기에 구현 코드 추가.
+	PAVIFILE pavi;
+	AVIFILEINFO fi;
+	int stm;
+	PAVISTREAM pstm = NULL;
+	AVISTREAMINFO si;
+	PGETFRAME pfrm = NULL;
+	int frame;
+	LPBITMAPINFOHEADER pbmpih;
+	unsigned char* image;
+
+	int x, y;
+
+	AVIFileInit();
+	AVIFileOpen(&pavi, AVIFileName, OF_READ | OF_SHARE_DENY_NONE, NULL);
+	AVIFileInfo(pavi, &fi, sizeof(AVIFILEINFO));
+
+	for (stm = 0; stm < fi.dwStreams; stm++) {
+		AVIFileGetStream(pavi, &pstm, 0, stm);
+		AVIStreamInfo(pstm, &si, sizeof(si));
+
+		if (si.fccType == streamtypeVIDEO) {
+			pfrm = AVIStreamGetFrameOpen(pstm, NULL);
+
+			// for (frame = 0; frame < si.dwLength; frame++) {
+			for (frame = 0; frame < 200; frame++) {
+				pbmpih = (LPBITMAPINFOHEADER)AVIStreamGetFrame(pfrm, frame);
+				if (!pbmpih) continue;
+
+				image = (unsigned char*)((LPSTR)pbmpih + (WORD)pbmpih->biSize);
+
+				/*
+				for (y = 0; y < fi.dwHeight; y++) {
+					for (x = 0; x < fi.dwWidth; x++) {
+						pDC->SetPixel(x, fi.dwHeight - y - 1, RGB(
+							image[(y * fi.dwWidth + x) * 3 + 2]
+							, image[(y * fi.dwWidth + x) * 3 + 1]
+							, image[(y * fi.dwWidth + x) * 3 + 0]));
+					}
+				}
+				*/
+			
+				pDC->SetStretchBltMode(COLORONCOLOR);
+				::SetDIBitsToDevice(pDC->GetSafeHdc(),
+					0, 0, fi.dwWidth, fi.dwHeight,
+					0, 0, 0, fi.dwWidth,
+					image, (BITMAPINFO*)pbmpih, DIB_RGB_COLORS);
+				Sleep(20);
+			}
+		}
+	}
+
+	AVIStreamGetFrameClose(pfrm);
+	AVIStreamRelease(pstm);
+	AVIFileRelease(pavi);
+	AVIFileExit();
 }

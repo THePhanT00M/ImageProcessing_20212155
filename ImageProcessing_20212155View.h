@@ -80,6 +80,12 @@ public:
 	afx_msg void OnGeometryFlip();
 	afx_msg void OnGeometryWarping();
 	afx_msg void OnGeometryMorping();
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg void OnAviView();
+	bool bAviMode;
+	CString AVIFileName;
+	void LoadAviFile(CDC* pDC);
 };
 
 #ifndef _DEBUG  // ImageProcessing_20212155View.cpp의 디버그 버전

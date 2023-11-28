@@ -60,6 +60,7 @@ public:
 	int gImageWidth;
 	int gImageHeight;
 	unsigned char** gResultImage;
+	unsigned char** morphedImage[10];
 
 	int LoadImageFile(CArchive& ar);
 	void LoadSecondImageFile(CArchive& ar);
