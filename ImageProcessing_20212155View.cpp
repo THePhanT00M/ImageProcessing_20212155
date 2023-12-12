@@ -1031,34 +1031,108 @@ void CImageProcessing20212155View::OnRegionMedianFiltering()
 	int x, y, i, j;
 	int n[9], temp;
 
-	for (y = 0; y < pDoc->imageHeight; y++)
-	{
-		for (x = 0; x < pDoc->imageWidth; x++)
-		{
-			n[0] = pDoc->inputImage[y - 1][x - 1];
-			n[1] = pDoc->inputImage[y - 1][x + 0];
-			n[2] = pDoc->inputImage[y - 1][x + 1];
-			n[3] = pDoc->inputImage[y + 0][x - 1];
-			n[4] = pDoc->inputImage[y + 0][x + 0];
-			n[5] = pDoc->inputImage[y + 0][x + 1];
-			n[6] = pDoc->inputImage[y + 1][x - 1];
-			n[7] = pDoc->inputImage[y + 1][x + 0];
-			n[8] = pDoc->inputImage[y + 1][x + 1];
+	for (y = 1; y < pDoc->imageHeight - 1; y++) {
+		for (x = 1; x < pDoc->imageWidth - 1; x++) {
+			if (pDoc->depth == 1) {
+				n[0] = pDoc->inputImage[y - 1][x - 1];
+				n[1] = pDoc->inputImage[y - 1][x + 0];
+				n[2] = pDoc->inputImage[y - 1][x + 1];
+				n[3] = pDoc->inputImage[y + 0][x - 1];
+				n[4] = pDoc->inputImage[y + 0][x + 0];
+				n[5] = pDoc->inputImage[y + 0][x + 1];
+				n[6] = pDoc->inputImage[y + 1][x - 1];
+				n[7] = pDoc->inputImage[y + 1][x + 0];
+				n[8] = pDoc->inputImage[y + 1][x + 1];
 
-			//sorting = 오름차순
-			for (i = 8; i >= 0; i--) {
-				for (j = 0; j < i; j++) {
-					if (n[j] > n[j + 1]) {
-						temp = n[j + 1];
-						n[j + 1] = n[j];
-						n[j] = temp;
+				//sorting = 오름차순
+				for (i = 8; i >= 0; i--) {
+					for (j = 0; j < i; j++) {
+						if (n[j] > n[j + 1]) {
+							temp = n[j + 1];
+							n[j + 1] = n[j];
+							n[j] = temp;
+						}
 					}
 				}
-			}
 
-			pDoc->resultImage[y][x] = n[4];
+				pDoc->resultImage[y][x] = n[4];
+			}
+			else {
+				n[0] = pDoc->inputImage[y - 1][(x - 1) * 3 + 0];
+				n[1] = pDoc->inputImage[y - 1][(x + 0) * 3 + 0];
+				n[2] = pDoc->inputImage[y - 1][(x + 1) * 3 + 0];
+				n[3] = pDoc->inputImage[y + 0][(x - 1) * 3 + 0];
+				n[4] = pDoc->inputImage[y + 0][(x + 0) * 3 + 0];
+				n[5] = pDoc->inputImage[y + 0][(x + 1) * 3 + 0];
+				n[6] = pDoc->inputImage[y + 1][(x - 1) * 3 + 0];
+				n[7] = pDoc->inputImage[y + 1][(x + 0) * 3 + 0];
+				n[8] = pDoc->inputImage[y + 1][(x + 1) * 3 + 0];
+
+				//sorting = 오름차순
+				for (i = 8; i >= 0; i--) {
+					for (j = 0; j < i; j++) {
+						if (n[j] > n[j + 1]) {
+							temp = n[j + 1];
+							n[j + 1] = n[j];
+							n[j] = temp;
+						}
+					}
+				}
+
+				pDoc->resultImage[y][x * 3 + 0] = n[4];
+
+				//-----------
+				n[0] = pDoc->inputImage[y - 1][(x - 1) * 3 + 1];
+				n[1] = pDoc->inputImage[y - 1][(x + 0) * 3 + 1];
+				n[2] = pDoc->inputImage[y - 1][(x + 1) * 3 + 1];
+				n[3] = pDoc->inputImage[y + 0][(x - 1) * 3 + 1];
+				n[4] = pDoc->inputImage[y + 0][(x + 0) * 3 + 1];
+				n[5] = pDoc->inputImage[y + 0][(x + 1) * 3 + 1];
+				n[6] = pDoc->inputImage[y + 1][(x - 1) * 3 + 1];
+				n[7] = pDoc->inputImage[y + 1][(x + 0) * 3 + 1];
+				n[8] = pDoc->inputImage[y + 1][(x + 1) * 3 + 1];
+
+				//sorting = 오름차순
+				for (i = 8; i >= 0; i--) {
+					for (j = 0; j < i; j++) {
+						if (n[j] > n[j + 1]) {
+							temp = n[j + 1];
+							n[j + 1] = n[j];
+							n[j] = temp;
+						}
+					}
+				}
+
+				pDoc->resultImage[y][x * 3 + 1] = n[4];
+
+				//-----------
+				n[0] = pDoc->inputImage[y - 1][(x - 1) * 3 + 2];
+				n[1] = pDoc->inputImage[y - 1][(x + 0) * 3 + 2];
+				n[2] = pDoc->inputImage[y - 1][(x + 1) * 3 + 2];
+				n[3] = pDoc->inputImage[y + 0][(x - 1) * 3 + 2];
+				n[4] = pDoc->inputImage[y + 0][(x + 0) * 3 + 2];
+				n[5] = pDoc->inputImage[y + 0][(x + 1) * 3 + 2];
+				n[6] = pDoc->inputImage[y + 1][(x - 1) * 3 + 2];
+				n[7] = pDoc->inputImage[y + 1][(x + 0) * 3 + 2];
+				n[8] = pDoc->inputImage[y + 1][(x + 1) * 3 + 2];
+
+				//sorting = 오름차순
+				for (i = 8; i >= 0; i--) {
+					for (j = 0; j < i; j++) {
+						if (n[j] > n[j + 1]) {
+							temp = n[j + 1];
+							n[j + 1] = n[j];
+							n[j] = temp;
+						}
+					}
+				}
+
+				pDoc->resultImage[y][x * 3 + 2] = n[4];
+			}
 		}
 	}
+
+	Invalidate();
 }
 
 
