@@ -1360,7 +1360,7 @@ void CImageProcessing20212155View::OnGeometryZoominPixelCopy()
 	int x, y, i, j;
 
 	int xscale = 3;
-	int yscale = 2;
+	int yscale = 3;
 
 	if (pDoc->gResultImage != NULL) {
 		for (i = 0; i < pDoc->gImageHeight; i++) free(pDoc->gResultImage[i]);
