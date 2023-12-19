@@ -1420,8 +1420,8 @@ void CImageProcessing20212155View::OnGeometryZoominBinuerinterpolation()
 	CImageProcessing20212155Doc* pDoc = GetDocument();
 	int x, y, i, j;
 
-	float xscale = 2.3;	//3 . . .
-	float yscale = 1.7;	//2 . . .
+	float xscale = 3;	//3 . . .
+	float yscale = 3;	//2 . . .
 	float src_x, src_y;
 	float alpha, beta;
 	int Ax, Ay, Bx, By, Cx, Cy, Dx, Dy;
